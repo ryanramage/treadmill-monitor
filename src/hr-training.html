@@ -9,31 +9,57 @@
 </head>
 <body>
     <div class="container">
-        <div class="controls">
-            <button id="toggleConnection">Connect</button>
-            <button id="setTargetHr">Set Target HR</button>
-            <button id="toggleHrTraining">Start HR Training</button>
-            <button id="toggleWorkout">Start Workout</button>
-            <button id="showOverlayButton">Create and Show Segments</button>
-        </div>
-        <br />
-        <input type="text" id="workoutDefinition" value="10:00min@137bpm,3x(08:00min@154bpm,03:00min@128bpm),08:00min@154bpm,10:00min@137bpm"/>
-        <div class="upper-half">
-            <div class="device-name" id="device-name">Device: Not connected</div>
-            <h1 id="avgHr">-- bpm</h1>
-            <h2 id="target-heart-rate">Target: -- bpm</h2>
-            <div id="workoutInfo">
-                current <span id="currentSegment"></span><br />
-                next <span id="nextSegment"></span><br />
-                Position <span id="currentSegmentIndex">x</span>/<span id="numberOfSegments">y</span>
+        <!-- Workout Builder Section -->
+        <div id="workoutBuilder" class="workout-builder">
+            <h2>Workout Builder</h2>
+            <div class="workout-controls">
+                <input type="text" id="workoutName" placeholder="Workout Name" />
+                <button id="saveWorkout">Save</button>
+                <select id="savedWorkouts">
+                    <option value="">Select saved workout...</option>
+                </select>
+                <button id="loadWorkout">Load</button>
+                <button id="deleteWorkout">Delete</button>
             </div>
-        </div>
-        <div id="overlay" class="overlay">
-            <div id="content" class="content">
-                <button id="closeButton" class="close-button">Close</button>
+            
+            <div class="segment-builder">
+                <h3>Add Segment</h3>
+                <input type="number" id="segmentSpeed" placeholder="Speed (km/h)" step="0.1" min="0" />
+                <input type="number" id="segmentDuration" placeholder="Duration (minutes)" step="0.1" min="0" />
+                <button id="addSegment">Add Segment</button>
             </div>
+            
+            <div class="segments-list">
+                <h3>Workout Segments</h3>
+                <div id="segmentsList"></div>
+            </div>
+            
+            <button id="startWorkout" class="start-button">Start Workout</button>
         </div>
-        <div class="lower-half">
+
+        <!-- Running Interface (hidden initially) -->
+        <div id="runningInterface" class="running-interface" style="display: none;">
+            <div class="controls">
+                <button id="toggleConnection">Connect</button>
+                <button id="pauseWorkout">Pause</button>
+                <button id="stopWorkout">Stop</button>
+            </div>
+            
+            <div class="upper-half">
+                <div class="device-name" id="device-name">Device: Not connected</div>
+                <h1 id="currentSpeed">-- km/h</h1>
+                <h2 id="targetSpeed">Target: -- km/h</h2>
+                <div id="workoutInfo">
+                    <div class="segment-info">
+                        <span id="currentSegmentInfo">Segment 1/5</span>
+                        <span id="segmentTimeRemaining">5:30 remaining</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="segmentProgress" class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="lower-half">
             <div class="tiles">
                 <div class="tile">
                     <div class="title">Distance</div>
