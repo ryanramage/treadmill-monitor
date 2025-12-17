@@ -22,7 +22,7 @@ treadmillControl.addDataHandler(treadmillData => {
 
 document.querySelector('#toggleConnection').addEventListener('click', async function() {
     if(!treadmillControl.connected()) {
-        document.querySelector('#toggleConnection').textContent = 'Verbindung trennen';
+        document.querySelector('#toggleConnection').textContent = 'Disconnect';
 
         await treadmillControl.connect();
         await treadmillCommands.requestControl();
@@ -30,9 +30,9 @@ document.querySelector('#toggleConnection').addEventListener('click', async func
         monitor.setDeviceName(treadmillControl.device.name);
     }
     else {
-        document.querySelector('#toggleConnection').textContent = 'Verbinden';
+        document.querySelector('#toggleConnection').textContent = 'Connect';
         treadmillControl.disconnect();
-        monitor.setDeviceName('Nicht verbunden');
+        monitor.setDeviceName('Not connected');
     }
 });
 
@@ -51,7 +51,7 @@ function setTargetHeartRate(targetHr) {
 }
 
 document.querySelector('#setTargetHr').addEventListener('click', function() {
-    let targetHr = window.prompt('Ziel HF');
+    let targetHr = window.prompt('Target HR');
 
     setTargetHeartRate(targetHr);
 });
@@ -62,16 +62,16 @@ document.querySelector('#toggleHrTraining').addEventListener('click', (function(
 
     return function() {
         if (!treadmillControl.connected() || !hrTraining.targetHeartRate) {
-            alert('Es muss zunächst eine Verbindung mit einem Laufband hergestellt und eine Ziel-Herzfrequenz ausgewählt werden.');
+            alert('You must first connect to a treadmill and set a target heart rate.');
             return;
         }
 
         if (!hrTraining.trainingInterval) {
-            element.textContent = 'HR Training stoppen';
+            element.textContent = 'Stop HR Training';
             hrTraining.startHFTraining();
         }
         else {
-            element.textContent = 'HR Training starten';
+            element.textContent = 'Start HR Training';
             hrTraining.stopHFTraining();
         }
     }
@@ -133,7 +133,7 @@ document.querySelector('#toggleWorkout').addEventListener('click', function() {
         const segments = parser.parse(document.querySelector('#workoutDefinition').value);
         workout.segments = segments;
 
-        document.querySelector('#toggleWorkout').textContent = "Workout stoppen";
+        document.querySelector('#toggleWorkout').textContent = "Stop Workout";
         workout.start();
 
         treadmillControl.addDataHandler((treadmillData) => {
@@ -141,7 +141,7 @@ document.querySelector('#toggleWorkout').addEventListener('click', function() {
         })
     }
     else {
-        document.querySelector('#toggleWorkout').textContent = "Workout starten";
+        document.querySelector('#toggleWorkout').textContent = "Start Workout";
         workout.stop();
     }
 });
@@ -155,7 +155,7 @@ document.querySelector('#toggleWorkout').addEventListener('click', function() {
             segments.forEach(segment => {
                 const segmentDiv = document.createElement('div');
                 segmentDiv.classList.add('segment');
-                segmentDiv.textContent = `Ziel-Geschwindigkeit: ${segment.targetSpeed ?? 'N/A'}, Ziel-Herzfrequenz: ${segment.targetHeartRate ?? 'N/A'}, Dauer: ${segment.duration ?? 'N/A'} min, Strecke: ${segment.distance ?? 'N/A'} km`;
+                segmentDiv.textContent = `Target Speed: ${segment.targetSpeed ?? 'N/A'}, Target Heart Rate: ${segment.targetHeartRate ?? 'N/A'}, Duration: ${segment.duration ?? 'N/A'} min, Distance: ${segment.distance ?? 'N/A'} km`;
                 contentDiv.appendChild(segmentDiv);
             });
 

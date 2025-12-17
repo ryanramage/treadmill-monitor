@@ -1,50 +1,50 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herzfrequenz Monitor</title>
+    <title>Heart Rate Monitor</title>
     <link rel="stylesheet" href="css/overlay.css" />
     <link rel="stylesheet" href="css/monitor.css" />
 </head>
 <body>
     <div class="container">
         <div class="controls">
-            <button id="toggleConnection">Verbinden</button>
-            <button id="setTargetHr">Ziel HR setzen</button>
-            <button id="toggleHrTraining">HR Training starten</button>
-            <button id="toggleWorkout">Workout starten</button>
-            <button id="showOverlayButton">Segmente erstellen und anzeigen</button>
+            <button id="toggleConnection">Connect</button>
+            <button id="setTargetHr">Set Target HR</button>
+            <button id="toggleHrTraining">Start HR Training</button>
+            <button id="toggleWorkout">Start Workout</button>
+            <button id="showOverlayButton">Create and Show Segments</button>
         </div>
         <br />
         <input type="text" id="workoutDefinition" value="10:00min@137bpm,3x(08:00min@154bpm,03:00min@128bpm),08:00min@154bpm,10:00min@137bpm"/>
         <div class="upper-half">
-            <div class="device-name" id="device-name">Gerät: Nicht verbunden</div>
+            <div class="device-name" id="device-name">Device: Not connected</div>
             <h1 id="avgHr">-- bpm</h1>
-            <h2 id="target-heart-rate">Ziel: -- bpm</h2>
+            <h2 id="target-heart-rate">Target: -- bpm</h2>
             <div id="workoutInfo">
-                aktuell <span id="currentSegment"></span><br />
-                nächstes <span id="nextSegment"></span><br />
+                current <span id="currentSegment"></span><br />
+                next <span id="nextSegment"></span><br />
                 Position <span id="currentSegmentIndex">x</span>/<span id="numberOfSegments">y</span>
             </div>
         </div>
         <div id="overlay" class="overlay">
             <div id="content" class="content">
-                <button id="closeButton" class="close-button">Schließen</button>
+                <button id="closeButton" class="close-button">Close</button>
             </div>
         </div>
         <div class="lower-half">
             <div class="tiles">
                 <div class="tile">
-                    <div class="title">Distanz</div>
+                    <div class="title">Distance</div>
                     <div class="value" id="distance">-- km</div>
                 </div>
                 <div class="tile">
-                    <div class="title">Geschwindigkeit</div>
+                    <div class="title">Speed</div>
                     <div class="value" id="speed">-- min/km</div>
                 </div>
                 <div class="tile">
-                    <div class="title">Dauer</div>
+                    <div class="title">Duration</div>
                     <div class="value" id="duration">--:--:--</div>
                 </div>
                 <div class="tile">
@@ -52,7 +52,7 @@
                     <div class="value" id="calories">-- kcal</div>
                 </div>
                 <div class="tile">
-                    <div class="title">Steigung</div>
+                    <div class="title">Incline</div>
                     <div class="value" id="incline">-- %</div>
                 </div>
                 <div class="tile">
