@@ -23,6 +23,9 @@ export class TreadmillControl {
         this.dataHandler = [];
         this.statusChangeHandlers = []; // New handlers for status changes
         this.lastMachineStatus = null; // Track previous status
+        this.lastDataTimestamp = null; // Track when we last received data
+        this.dataTimeoutTimer = null; // Timer to detect when data stops
+        this.dataTimeoutMs = 3000; // 3 seconds without data = stopped
     }
 
     async sendCommand(command) {
@@ -113,6 +116,40 @@ export class TreadmillControl {
         return (firstSpeed - lastSpeed) > 1.0;
     }
 
+    handleDataTimeout() {
+        console.log('FTMS Data timeout - treadmill likely stopped');
+        
+        // Only trigger if we were previously running
+        if (this.lastMachineStatus === 'running' || this.lastMachineStatus === 'stopping') {
+            this.statusChangeHandlers.forEach(handler => {
+                handler({
+                    previousStatus: this.lastMachineStatus,
+                    currentStatus: 'stopped',
+                    speed: 0,
+                    flags: 0,
+                    speedHistory: [...this.speedHistory],
+                    timestamp: Date.now(),
+                    reason: 'data_timeout'
+                });
+            });
+            
+            this.lastMachineStatus = 'stopped';
+        }
+    }
+
+    disconnect() {
+        // Clear timeout timer when disconnecting
+        if (this.dataTimeoutTimer) {
+            clearTimeout(this.dataTimeoutTimer);
+            this.dataTimeoutTimer = null;
+        }
+        
+        if (this.connected()) {
+            this.device.gatt.disconnect();
+            this.device = null;
+        }
+    }
+
     handleNotifications(event) {
         let value = event.target.value;
         var flags = value.getUint16(0, /*littleEndian=*/true);
@@ -179,6 +216,20 @@ export class TreadmillControl {
             result.elapsedTime = elapsedTime;
         }
 
+        // Update last data timestamp
+        this.lastDataTimestamp = Date.now();
+        
+        // Clear any existing timeout timer since we got data
+        if (this.dataTimeoutTimer) {
+            clearTimeout(this.dataTimeoutTimer);
+            this.dataTimeoutTimer = null;
+        }
+        
+        // Set up timeout to detect when data stops coming
+        this.dataTimeoutTimer = setTimeout(() => {
+            this.handleDataTimeout();
+        }, this.dataTimeoutMs);
+        
         // Enhanced status detection for manual mode treadmills
         let machineStatus = 'unknown';
         
@@ -197,8 +248,9 @@ export class TreadmillControl {
             this.speedHistory.shift();
         }
         
-        // Check various status indicators
+        // Check various status indicators - lowered threshold for treadmill startup
         const isSpeedZero = speed <= 0.1;
+        const isSpeedVeryLow = speed > 0.1 && speed <= 1.5; // Detect startup speed
         const isSpeedStable = this.isSpeedStable();
         const hasRecentSpeedDrop = this.hasRecentSpeedDrop();
         
@@ -209,8 +261,11 @@ export class TreadmillControl {
         // Determine status based on multiple factors
         if (isSpeedZero) {
             machineStatus = 'stopped';
-        } else if (hasRecentSpeedDrop && !machineStatusFlag) {
-            // Speed dropped recently and machine status flag is off
+        } else if (isSpeedVeryLow && this.lastMachineStatus === 'stopped') {
+            // Treadmill starting up from stopped state
+            machineStatus = 'running';
+        } else if (hasRecentSpeedDrop && speed < 2.0) {
+            // Speed dropped recently and is now very low - likely stopping
             machineStatus = 'stopping';
         } else if (speed > 0.1) {
             machineStatus = 'running';
@@ -227,7 +282,9 @@ export class TreadmillControl {
             machineStatusFlag: machineStatusFlag,
             targetSettingStatus: targetSettingStatus,
             isSpeedZero: isSpeedZero,
+            isSpeedVeryLow: isSpeedVeryLow,
             hasRecentSpeedDrop: hasRecentSpeedDrop,
+            lastStatus: this.lastMachineStatus,
             speedHistory: this.speedHistory.slice(-3), // Last 3 readings
             rawData: Array.from(new Uint8Array(value.buffer))
         });
