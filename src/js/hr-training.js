@@ -21,27 +21,129 @@ let workoutInterval = null;
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Speed conversion utilities
+    function kmhToMinPerKm(kmh) {
+        if (kmh <= 0) return 0;
+        return 60 / kmh;
+    }
+    
+    function minPerKmToKmh(minPerKm) {
+        if (minPerKm <= 0) return 0;
+        return 60 / minPerKm;
+    }
+    
+    function formatMinPerKm(minPerKm) {
+        const minutes = Math.floor(minPerKm);
+        const seconds = Math.round((minPerKm - minutes) * 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    // UI Mode switching
+    function toggleTrainingMode() {
+        const mode = document.querySelector('input[name="trainingMode"]:checked').value;
+        const hrMode = document.getElementById('heartRateMode');
+        const manualMode = document.getElementById('manualMode');
+        
+        if (mode === 'heartRate') {
+            hrMode.style.display = 'block';
+            manualMode.style.display = 'none';
+        } else {
+            hrMode.style.display = 'none';
+            manualMode.style.display = 'block';
+        }
+    }
+    
     // Workout Builder Functions
     function addSegment() {
-        const speed = parseFloat(document.getElementById('segmentSpeed').value);
         const duration = parseFloat(document.getElementById('segmentDuration').value);
+        const mode = document.querySelector('input[name="trainingMode"]:checked').value;
         
-        if (isNaN(speed) || isNaN(duration) || speed <= 0 || duration <= 0) {
-            alert('Please enter valid speed and duration values');
+        if (isNaN(duration) || duration <= 0) {
+            alert('Please enter a valid duration');
             return;
         }
         
-        const segment = {
-            speed: speed,
-            duration: duration * 60 // convert to seconds
-        };
+        let segment;
+        
+        if (mode === 'heartRate') {
+            const targetHR = parseFloat(document.getElementById('targetHeartRate').value);
+            const adjustSpeed = document.querySelector('input[name="adjustSpeed"]').checked;
+            const adjustIncline = document.querySelector('input[name="adjustIncline"]').checked;
+            const minSpeedInput = parseFloat(document.getElementById('minSpeed').value);
+            const maxSpeedInput = parseFloat(document.getElementById('maxSpeed').value);
+            const speedLimitsUnit = document.getElementById('speedLimitsUnit').value;
+            
+            if (isNaN(targetHR) || targetHR < 50 || targetHR > 220) {
+                alert('Please enter a valid target heart rate (50-220 bpm)');
+                return;
+            }
+            
+            if (!adjustSpeed && !adjustIncline) {
+                alert('Please select at least one adjustment method (Speed or Incline)');
+                return;
+            }
+            
+            // Convert speed limits to km/h if needed
+            let minSpeed = minSpeedInput;
+            let maxSpeed = maxSpeedInput;
+            if (speedLimitsUnit === 'minperkm') {
+                minSpeed = minPerKmToKmh(minSpeedInput);
+                maxSpeed = minPerKmToKmh(maxSpeedInput);
+            }
+            
+            segment = {
+                type: 'heartRate',
+                duration: duration * 60, // convert to seconds
+                targetHeartRate: targetHR,
+                adjustments: {
+                    speed: adjustSpeed,
+                    incline: adjustIncline
+                },
+                speedLimits: {
+                    min: minSpeed || 1.0,
+                    max: maxSpeed || 20.0
+                },
+                inclineLimits: {
+                    min: 0,
+                    max: 15
+                }
+            };
+        } else {
+            const speedInput = parseFloat(document.getElementById('manualSpeed').value);
+            const speedUnit = document.getElementById('speedUnit').value;
+            const incline = parseFloat(document.getElementById('manualIncline').value) || 0;
+            
+            if (isNaN(speedInput) || speedInput <= 0) {
+                alert('Please enter a valid speed');
+                return;
+            }
+            
+            // Convert speed to km/h if needed
+            let speed = speedInput;
+            if (speedUnit === 'minperkm') {
+                speed = minPerKmToKmh(speedInput);
+            }
+            
+            segment = {
+                type: 'manual',
+                duration: duration * 60, // convert to seconds
+                speed: speed,
+                incline: incline
+            };
+        }
         
         currentWorkoutSegments.push(segment);
         updateSegmentsList();
-        
-        // Clear inputs
-        document.getElementById('segmentSpeed').value = '';
+        clearSegmentInputs();
+    }
+    
+    function clearSegmentInputs() {
         document.getElementById('segmentDuration').value = '';
+        document.getElementById('targetHeartRate').value = '';
+        document.getElementById('minSpeed').value = '';
+        document.getElementById('maxSpeed').value = '';
+        document.getElementById('manualSpeed').value = '';
+        document.getElementById('manualIncline').value = '';
     }
 
     function updateSegmentsList() {
@@ -51,10 +153,33 @@ document.addEventListener('DOMContentLoaded', function() {
         currentWorkoutSegments.forEach((segment, index) => {
             const div = document.createElement('div');
             div.className = 'segment-item';
+            
+            let segmentDescription;
+            if (segment.type === 'heartRate') {
+                const adjustments = [];
+                if (segment.adjustments.speed) adjustments.push('Speed');
+                if (segment.adjustments.incline) adjustments.push('Incline');
+                
+                segmentDescription = `
+                    <div class="segment-details">
+                        <strong>Segment ${index + 1}:</strong> HR Target ${segment.targetHeartRate} bpm
+                        <br>Duration: ${(segment.duration / 60).toFixed(1)} minutes
+                        <br>Adjust: ${adjustments.join(', ')}
+                        <br>Speed limits: ${segment.speedLimits.min.toFixed(1)} - ${segment.speedLimits.max.toFixed(1)} km/h
+                    </div>
+                `;
+            } else {
+                segmentDescription = `
+                    <div class="segment-details">
+                        <strong>Segment ${index + 1}:</strong> Manual
+                        <br>Duration: ${(segment.duration / 60).toFixed(1)} minutes
+                        <br>Speed: ${segment.speed.toFixed(1)} km/h, Incline: ${segment.incline.toFixed(1)}%
+                    </div>
+                `;
+            }
+            
             div.innerHTML = `
-                <div class="segment-details">
-                    Segment ${index + 1}: ${segment.speed} km/h for ${(segment.duration / 60).toFixed(1)} minutes
-                </div>
+                ${segmentDescription}
                 <button class="remove-segment" data-index="${index}">Remove</button>
             `;
             list.appendChild(div);
@@ -153,12 +278,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function startSegment(segment) {
         segmentStartTime = Date.now();
         
-        // Set target speed on display
-        document.getElementById('targetSpeed').textContent = `Target: ${segment.speed} km/h`;
-        
-        // Set speed on treadmill if connected
-        if (treadmillControl.connected()) {
-            treadmillCommands.setSpeed(segment.speed);
+        if (segment.type === 'heartRate') {
+            // Set target heart rate display
+            document.getElementById('targetSpeed').textContent = `Target HR: ${segment.targetHeartRate} bpm`;
+            
+            // TODO: Start heart rate training with adjustment parameters
+            // This will be implemented in the next phase
+        } else {
+            // Manual segment - set fixed values
+            document.getElementById('targetSpeed').textContent = `Target: ${segment.speed.toFixed(1)} km/h`;
+            
+            // Set speed and incline on treadmill if connected
+            if (treadmillControl.connected()) {
+                treadmillCommands.setSpeed(segment.speed);
+                treadmillCommands.setInclination(segment.incline);
+            }
         }
     }
 
@@ -234,6 +368,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load saved workouts on page load
     loadSavedWorkouts();
     
+    // Initialize UI
+    toggleTrainingMode();
+    
     // Event Listeners
     document.getElementById('addSegment').addEventListener('click', addSegment);
     document.getElementById('saveWorkout').addEventListener('click', saveWorkout);
@@ -242,6 +379,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('startWorkout').addEventListener('click', startWorkout);
     document.getElementById('pauseWorkout').addEventListener('click', pauseWorkout);
     document.getElementById('stopWorkout').addEventListener('click', stopWorkout);
+    
+    // Training mode toggle
+    document.querySelectorAll('input[name="trainingMode"]').forEach(radio => {
+        radio.addEventListener('change', toggleTrainingMode);
+    });
     
     // Event delegation for remove segment buttons
     document.getElementById('segmentsList').addEventListener('click', function(e) {

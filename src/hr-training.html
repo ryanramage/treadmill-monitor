@@ -24,8 +24,50 @@
             
             <div class="segment-builder">
                 <h3>Add Segment</h3>
-                <input type="number" id="segmentSpeed" placeholder="Speed (km/h)" step="0.1" min="0" />
+                
+                <!-- Duration -->
                 <input type="number" id="segmentDuration" placeholder="Duration (minutes)" step="0.1" min="0" />
+                
+                <!-- Training Mode Toggle -->
+                <div class="training-mode">
+                    <label>
+                        <input type="radio" name="trainingMode" value="heartRate" checked> Heart Rate Target
+                    </label>
+                    <label>
+                        <input type="radio" name="trainingMode" value="manual"> Manual Control
+                    </label>
+                </div>
+                
+                <!-- Heart Rate Mode -->
+                <div id="heartRateMode" class="mode-section">
+                    <input type="number" id="targetHeartRate" placeholder="Target HR (bpm)" min="50" max="220" />
+                    <div class="adjustment-strategy">
+                        <label>Adjust:</label>
+                        <label><input type="checkbox" name="adjustSpeed" checked> Speed</label>
+                        <label><input type="checkbox" name="adjustIncline"> Incline</label>
+                    </div>
+                    <div class="speed-limits">
+                        <input type="number" id="minSpeed" placeholder="Min Speed" step="0.1" />
+                        <input type="number" id="maxSpeed" placeholder="Max Speed" step="0.1" />
+                        <select id="speedLimitsUnit">
+                            <option value="kmh">km/h</option>
+                            <option value="minperkm">min/km</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Manual Mode -->
+                <div id="manualMode" class="mode-section" style="display: none;">
+                    <div class="speed-input">
+                        <input type="number" id="manualSpeed" placeholder="Speed" step="0.1" />
+                        <select id="speedUnit">
+                            <option value="kmh">km/h</option>
+                            <option value="minperkm">min/km</option>
+                        </select>
+                    </div>
+                    <input type="number" id="manualIncline" placeholder="Incline %" step="0.1" />
+                </div>
+                
                 <button id="addSegment">Add Segment</button>
             </div>
             
