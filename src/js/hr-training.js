@@ -632,6 +632,11 @@ treadmillControl.addDataHandler(treadmillData => {
     if (document.getElementById('runningInterface').style.display !== 'none') {
         document.getElementById('currentSpeed').textContent = `${treadmillData.speed.toFixed(1)} km/h`;
         
+        // Add debug info (remove this later)
+        if (treadmillData.flags !== undefined) {
+            console.log(`Speed: ${treadmillData.speed}, Status: ${treadmillData.machineStatus}, Flags: ${treadmillData.flags.toString(2)}`);
+        }
+        
         // Check for manual speed adjustments during workout
         checkForManualAdjustments(treadmillData);
     }
@@ -640,11 +645,14 @@ treadmillControl.addDataHandler(treadmillData => {
 // Handle treadmill status changes (start/stop buttons pressed on treadmill)
 treadmillControl.addStatusChangeHandler(statusChange => {
     console.log(`Treadmill status changed: ${statusChange.previousStatus} -> ${statusChange.currentStatus}`);
+    console.log(`Speed: ${statusChange.speed}, Flags: ${statusChange.flags?.toString(2)}`);
+    console.log('Speed history:', statusChange.speedHistory);
     
     // Only handle status changes if we're in a workout
     if (document.getElementById('runningInterface').style.display !== 'none') {
         
-        if (statusChange.currentStatus === 'running' && statusChange.previousStatus === 'stopped') {
+        if ((statusChange.currentStatus === 'running' || statusChange.currentStatus === 'stopping') && 
+            (statusChange.previousStatus === 'stopped' || statusChange.previousStatus === 'unknown')) {
             // Treadmill started - resume workout timer if paused
             console.log('Treadmill started - resuming workout timer');
             if (!workoutInterval) {
@@ -654,9 +662,10 @@ treadmillControl.addStatusChangeHandler(statusChange => {
                 updateControlModeDisplay();
             }
         } 
-        else if (statusChange.currentStatus === 'stopped' && statusChange.previousStatus === 'running') {
+        else if ((statusChange.currentStatus === 'stopped' || statusChange.currentStatus === 'stopping') && 
+                 statusChange.previousStatus === 'running') {
             // Treadmill stopped - pause workout timer
-            console.log('Treadmill stopped - pausing workout timer');
+            console.log('Treadmill stopped/stopping - pausing workout timer');
             if (workoutInterval) {
                 clearInterval(workoutInterval);
                 workoutInterval = null;
@@ -791,6 +800,9 @@ function showTreadmillStatusNotification(statusChange) {
         notification.style.background = '#4CAF50';
     } else if (statusChange.currentStatus === 'stopped') {
         message = '⏸️ Treadmill stopped';
+        notification.style.background = '#FF9800';
+    } else if (statusChange.currentStatus === 'stopping') {
+        message = '⏸️ Treadmill stopping';
         notification.style.background = '#FF9800';
     } else if (statusChange.currentStatus === 'program-resumed') {
         message = '🤖 Program control resumed';

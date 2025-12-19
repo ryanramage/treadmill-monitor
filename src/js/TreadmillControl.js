@@ -92,6 +92,27 @@ export class TreadmillControl {
         return this.device && this.device.gatt.connected;
     }
 
+    isSpeedStable() {
+        if (this.speedHistory.length < 3) return false;
+        
+        const recent = this.speedHistory.slice(-3);
+        const speeds = recent.map(h => h.speed);
+        const maxDiff = Math.max(...speeds) - Math.min(...speeds);
+        
+        return maxDiff < 0.2; // Speed is stable if variation is less than 0.2 km/h
+    }
+
+    hasRecentSpeedDrop() {
+        if (this.speedHistory.length < 5) return false;
+        
+        const recent = this.speedHistory.slice(-5);
+        const firstSpeed = recent[0].speed;
+        const lastSpeed = recent[recent.length - 1].speed;
+        
+        // Detect if speed dropped by more than 1 km/h in recent readings
+        return (firstSpeed - lastSpeed) > 1.0;
+    }
+
     handleNotifications(event) {
         let value = event.target.value;
         var flags = value.getUint16(0, /*littleEndian=*/true);
@@ -158,15 +179,58 @@ export class TreadmillControl {
             result.elapsedTime = elapsedTime;
         }
 
-        // Simple speed-based status detection for manual mode treadmills
+        // Enhanced status detection for manual mode treadmills
         let machineStatus = 'unknown';
-        if (speed > 0.1) { // Small threshold to avoid noise
-            machineStatus = 'running';
-        } else {
+        
+        // Store speed history for better detection
+        if (!this.speedHistory) {
+            this.speedHistory = [];
+        }
+        
+        this.speedHistory.push({
+            speed: speed,
+            timestamp: Date.now()
+        });
+        
+        // Keep only last 10 readings (about 10 seconds of data)
+        if (this.speedHistory.length > 10) {
+            this.speedHistory.shift();
+        }
+        
+        // Check various status indicators
+        const isSpeedZero = speed <= 0.1;
+        const isSpeedStable = this.isSpeedStable();
+        const hasRecentSpeedDrop = this.hasRecentSpeedDrop();
+        
+        // Additional FTMS flags to check
+        const targetSettingStatus = (flags & (1 << 14)) !== 0;
+        const machineStatusFlag = (flags & (1 << 13)) !== 0;
+        
+        // Determine status based on multiple factors
+        if (isSpeedZero) {
             machineStatus = 'stopped';
+        } else if (hasRecentSpeedDrop && !machineStatusFlag) {
+            // Speed dropped recently and machine status flag is off
+            machineStatus = 'stopping';
+        } else if (speed > 0.1) {
+            machineStatus = 'running';
         }
         
         result.machineStatus = machineStatus;
+        result.flags = flags; // Include flags for debugging
+
+        // Log all FTMS events to devtools
+        console.log('FTMS Data:', {
+            speed: speed,
+            flags: flags.toString(2).padStart(16, '0'),
+            machineStatus: machineStatus,
+            machineStatusFlag: machineStatusFlag,
+            targetSettingStatus: targetSettingStatus,
+            isSpeedZero: isSpeedZero,
+            hasRecentSpeedDrop: hasRecentSpeedDrop,
+            speedHistory: this.speedHistory.slice(-3), // Last 3 readings
+            rawData: Array.from(new Uint8Array(value.buffer))
+        });
 
         // Check for status changes and notify handlers
         if (this.lastMachineStatus !== null && this.lastMachineStatus !== machineStatus) {
@@ -175,6 +239,8 @@ export class TreadmillControl {
                     previousStatus: this.lastMachineStatus,
                     currentStatus: machineStatus,
                     speed: speed,
+                    flags: flags,
+                    speedHistory: [...this.speedHistory],
                     timestamp: Date.now()
                 });
             });
