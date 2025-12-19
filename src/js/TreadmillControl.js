@@ -21,6 +21,8 @@ export class TreadmillControl {
         this.heartRates = [];
 
         this.dataHandler = [];
+        this.statusChangeHandlers = []; // New handlers for status changes
+        this.lastMachineStatus = null; // Track previous status
     }
 
     async sendCommand(command) {
@@ -33,6 +35,10 @@ export class TreadmillControl {
 
     addDataHandler(handler) {
         this.dataHandler.push(handler);
+    }
+
+    addStatusChangeHandler(handler) {
+        this.statusChangeHandlers.push(handler);
     }
 
     isWebBluetoothEnabled() {
@@ -141,6 +147,39 @@ export class TreadmillControl {
             const elapsedTime = (value.getUint16(posElapsedTime, /*littleEndian=*/true));
             result.elapsedTime = elapsedTime;
         }
+
+        // Extract machine status from flags
+        // Bit 0: More data available
+        // Bit 13: Machine status (0 = stopped/idle, 1 = in use/running)
+        // Bit 14: Target setting status
+        const machineStatusBit = (flags & (1 << 13)) !== 0;
+        const targetSettingBit = (flags & (1 << 14)) !== 0;
+        
+        // Determine machine status
+        let machineStatus = 'unknown';
+        if (speed > 0) {
+            machineStatus = 'running';
+        } else if (machineStatusBit) {
+            machineStatus = 'ready'; // Machine is on but not moving
+        } else {
+            machineStatus = 'stopped';
+        }
+        
+        result.machineStatus = machineStatus;
+
+        // Check for status changes and notify handlers
+        if (this.lastMachineStatus !== null && this.lastMachineStatus !== machineStatus) {
+            this.statusChangeHandlers.forEach(handler => {
+                handler({
+                    previousStatus: this.lastMachineStatus,
+                    currentStatus: machineStatus,
+                    speed: speed,
+                    timestamp: Date.now()
+                });
+            });
+        }
+        this.lastMachineStatus = machineStatus;
+
         this.dataHandler.forEach(cb => cb(result));
     }
 }
@@ -161,6 +200,7 @@ export class TreadmillData {
         this.elapsedTime = undefined;
         this.remainingTime = undefined;
         this.forceBelt = undefined;
+        this.machineStatus = undefined; // New field for machine status
     }
 }
 

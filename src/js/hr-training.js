@@ -597,3 +597,70 @@ treadmillControl.addDataHandler(treadmillData => {
     }
 });
 
+// Handle treadmill status changes (start/stop buttons pressed on treadmill)
+treadmillControl.addStatusChangeHandler(statusChange => {
+    console.log(`Treadmill status changed: ${statusChange.previousStatus} -> ${statusChange.currentStatus}`);
+    
+    // Only handle status changes if we're in a workout
+    if (document.getElementById('runningInterface').style.display !== 'none') {
+        
+        if (statusChange.currentStatus === 'running' && statusChange.previousStatus === 'stopped') {
+            // User pressed start on treadmill
+            console.log('Treadmill started by user - resuming workout if paused');
+            if (!workoutInterval) {
+                // Resume workout if it was paused
+                workoutInterval = setInterval(updateWorkoutDisplay, 1000);
+                document.getElementById('pauseWorkout').textContent = 'Pause';
+            }
+        } 
+        else if (statusChange.currentStatus === 'stopped' && statusChange.previousStatus === 'running') {
+            // User pressed stop on treadmill
+            console.log('Treadmill stopped by user - pausing workout');
+            if (workoutInterval) {
+                clearInterval(workoutInterval);
+                workoutInterval = null;
+                document.getElementById('pauseWorkout').textContent = 'Resume';
+            }
+        }
+        
+        // Show notification to user
+        showTreadmillStatusNotification(statusChange);
+    }
+});
+
+// Function to show status change notifications
+function showTreadmillStatusNotification(statusChange) {
+    const notification = document.createElement('div');
+    notification.className = 'treadmill-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #333;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    let message = '';
+    if (statusChange.currentStatus === 'running') {
+        message = '▶️ Treadmill started';
+        notification.style.background = '#4CAF50';
+    } else if (statusChange.currentStatus === 'stopped') {
+        message = '⏸️ Treadmill stopped';
+        notification.style.background = '#FF9800';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
+}
+
