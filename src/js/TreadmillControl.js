@@ -26,10 +26,20 @@ export class TreadmillControl {
     }
 
     async sendCommand(command) {
+        if (!this.connected()) {
+            throw new Error('Treadmill not connected');
+        }
+        
+        if (!this.controlPointCharacteristic) {
+            throw new Error('Control point characteristic not available');
+        }
+        
         try {
             let result = await this.controlPointCharacteristic.writeValueWithResponse(command);
+            return result;
         } catch (error) {
             console.error('Fehler beim Senden des Befehls', error);
+            throw error;
         }
     }
 

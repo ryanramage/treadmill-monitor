@@ -389,14 +389,14 @@ document.addEventListener('DOMContentLoaded', function() {
         segmentStartTime = Date.now();
         
         // Start first segment
-        startSegment(currentWorkoutSegments[0]);
+        await startSegment(currentWorkoutSegments[0]);
         updateWorkoutDisplay();
         
         // Start workout update interval
         workoutInterval = setInterval(updateWorkoutDisplay, 1000);
     }
 
-    function startSegment(segment) {
+    async function startSegment(segment) {
         segmentStartTime = Date.now();
         
         if (segment.type === 'heartRate') {
@@ -411,8 +411,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Set speed and incline on treadmill if connected
             if (treadmillControl.connected()) {
-                treadmillCommands.setSpeed(segment.speed);
-                treadmillCommands.setInclination(segment.incline);
+                try {
+                    await treadmillCommands.setSpeed(segment.speed);
+                    await treadmillCommands.setInclination(segment.incline);
+                } catch (error) {
+                    console.error('Failed to set treadmill parameters:', error);
+                    alert('Failed to set treadmill speed/incline: ' + error.message);
+                }
             }
         }
     }
@@ -444,7 +449,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (elapsed >= segment.duration) {
             currentSegmentIndex++;
             if (currentSegmentIndex < currentWorkoutSegments.length) {
-                startSegment(currentWorkoutSegments[currentSegmentIndex]);
+                startSegment(currentWorkoutSegments[currentSegmentIndex]).catch(error => {
+                    console.error('Failed to start next segment:', error);
+                });
             }
         }
     }
@@ -460,11 +467,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function stopWorkout() {
-        finishWorkout();
+    async function stopWorkout() {
+        await finishWorkout();
     }
 
-    function finishWorkout() {
+    async function finishWorkout() {
         // Clear workout interval
         if (workoutInterval) {
             clearInterval(workoutInterval);
@@ -480,7 +487,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Stop treadmill if connected
         if (treadmillControl.connected()) {
-            treadmillCommands.setSpeed(0);
+            try {
+                await treadmillCommands.setSpeed(0);
+            } catch (error) {
+                console.error('Failed to stop treadmill:', error);
+            }
         }
         
         alert('Workout completed!');
