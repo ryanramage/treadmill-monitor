@@ -374,6 +374,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        if (!treadmillControl.connected()) {
+            alert('Please connect to the treadmill before starting the workout');
+            return;
+        }
+        
         // Hide workout builder, show running interface
         document.getElementById('workoutBuilder').style.display = 'none';
         document.getElementById('runningInterface').style.display = 'block';
@@ -511,6 +516,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Connection toggle for workout builder
+    document.querySelector('#toggleConnectionBuilder').addEventListener('click', async function() {
+        const button = document.querySelector('#toggleConnectionBuilder');
+        const status = document.querySelector('#connectionStatus');
+        
+        if(!treadmillControl.connected()) {
+            try {
+                button.textContent = 'Connecting...';
+                button.disabled = true;
+                
+                await treadmillControl.connect();
+                await treadmillCommands.requestControl();
+                
+                button.textContent = 'Disconnect';
+                button.disabled = false;
+                status.textContent = `Connected: ${treadmillControl.device.name}`;
+                status.className = 'connection-status connected';
+                
+                monitor.setDeviceName(treadmillControl.device.name);
+            } catch (error) {
+                button.textContent = 'Connect';
+                button.disabled = false;
+                status.textContent = 'Connection failed';
+                status.className = 'connection-status error';
+                alert('Failed to connect to treadmill: ' + error.message);
+            }
+        }
+        else {
+            button.textContent = 'Connect';
+            treadmillControl.disconnect();
+            status.textContent = 'Not connected';
+            status.className = 'connection-status disconnected';
+            monitor.setDeviceName('Not connected');
+        }
+    });
+    
+    // Connection toggle for running interface (kept for manual reconnection if needed)
     document.querySelector('#toggleConnection').addEventListener('click', async function() {
         if(!treadmillControl.connected()) {
             document.querySelector('#toggleConnection').textContent = 'Disconnect';
