@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return convertedSegments;
     }
 
-    function startWorkout() {
+    async function startWorkout() {
         if (currentWorkoutSegments.length === 0) {
             alert('Please add segments to your workout first');
             return;
