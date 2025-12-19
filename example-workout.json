@@ -1,0 +1,54 @@
+{
+  "name": "Interval Training Workout",
+  "description": "A 30-minute interval workout with heart rate zones and recovery periods",
+  "segments": [
+    {
+      "type": "manual",
+      "duration": 300,
+      "speed": 6.0,
+      "incline": 0
+    },
+    {
+      "type": "heartRate",
+      "duration": 600,
+      "targetHeartRate": 150,
+      "adjustments": {
+        "speed": true,
+        "incline": false
+      },
+      "speedLimits": {
+        "min": 8.0,
+        "max": 12.0
+      }
+    },
+    {
+      "type": "manual",
+      "duration": 180,
+      "speed": 5.0,
+      "incline": 0
+    },
+    {
+      "type": "heartRate",
+      "duration": 480,
+      "targetHeartRate": 170,
+      "adjustments": {
+        "speed": true,
+        "incline": true
+      },
+      "speedLimits": {
+        "min": 10.0,
+        "max": 15.0
+      },
+      "inclineLimits": {
+        "min": 0,
+        "max": 8
+      }
+    },
+    {
+      "type": "manual",
+      "duration": 300,
+      "speed": 4.0,
+      "incline": 0
+    }
+  ]
+}

@@ -252,6 +252,122 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function importJsonWorkout() {
+        document.getElementById('jsonFileInput').click();
+    }
+
+    function handleJsonFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const jsonData = JSON.parse(e.target.result);
+                
+                // Validate and convert JSON workout to internal format
+                const segments = validateAndConvertJsonWorkout(jsonData);
+                
+                if (segments) {
+                    currentWorkoutSegments = segments;
+                    updateSegmentsList();
+                    
+                    // Set workout name if provided
+                    if (jsonData.name) {
+                        document.getElementById('workoutName').value = jsonData.name;
+                    }
+                    
+                    alert('Workout imported successfully!');
+                }
+            } catch (error) {
+                alert('Error importing JSON file: ' + error.message);
+            }
+        };
+        
+        reader.readAsText(file);
+        
+        // Reset file input
+        event.target.value = '';
+    }
+
+    function validateAndConvertJsonWorkout(jsonData) {
+        // Validate required fields
+        if (!jsonData.segments || !Array.isArray(jsonData.segments)) {
+            throw new Error('JSON must contain a "segments" array');
+        }
+
+        if (jsonData.segments.length === 0) {
+            throw new Error('Workout must contain at least one segment');
+        }
+
+        const convertedSegments = [];
+
+        jsonData.segments.forEach((segment, index) => {
+            // Validate required fields
+            if (typeof segment.duration !== 'number' || segment.duration <= 0) {
+                throw new Error(`Segment ${index + 1}: duration must be a positive number (in seconds)`);
+            }
+
+            if (!segment.type || !['heartRate', 'manual'].includes(segment.type)) {
+                throw new Error(`Segment ${index + 1}: type must be "heartRate" or "manual"`);
+            }
+
+            let convertedSegment = {
+                type: segment.type,
+                duration: segment.duration
+            };
+
+            if (segment.type === 'heartRate') {
+                // Heart rate segment validation
+                if (typeof segment.targetHeartRate !== 'number' || 
+                    segment.targetHeartRate < 50 || segment.targetHeartRate > 220) {
+                    throw new Error(`Segment ${index + 1}: targetHeartRate must be between 50-220 bpm`);
+                }
+
+                if (!segment.adjustments || typeof segment.adjustments !== 'object') {
+                    throw new Error(`Segment ${index + 1}: adjustments object is required for heart rate segments`);
+                }
+
+                if (typeof segment.adjustments.speed !== 'boolean' || 
+                    typeof segment.adjustments.incline !== 'boolean') {
+                    throw new Error(`Segment ${index + 1}: adjustments.speed and adjustments.incline must be boolean`);
+                }
+
+                if (!segment.adjustments.speed && !segment.adjustments.incline) {
+                    throw new Error(`Segment ${index + 1}: at least one adjustment method must be enabled`);
+                }
+
+                convertedSegment.targetHeartRate = segment.targetHeartRate;
+                convertedSegment.adjustments = segment.adjustments;
+                
+                // Speed limits (optional, with defaults)
+                convertedSegment.speedLimits = {
+                    min: segment.speedLimits?.min || 1.0,
+                    max: segment.speedLimits?.max || 20.0
+                };
+
+                // Incline limits (optional, with defaults)
+                convertedSegment.inclineLimits = {
+                    min: segment.inclineLimits?.min || 0,
+                    max: segment.inclineLimits?.max || 15
+                };
+
+            } else if (segment.type === 'manual') {
+                // Manual segment validation
+                if (typeof segment.speed !== 'number' || segment.speed <= 0) {
+                    throw new Error(`Segment ${index + 1}: speed must be a positive number (in km/h)`);
+                }
+
+                convertedSegment.speed = segment.speed;
+                convertedSegment.incline = segment.incline || 0;
+            }
+
+            convertedSegments.push(convertedSegment);
+        });
+
+        return convertedSegments;
+    }
+
     function startWorkout() {
         if (currentWorkoutSegments.length === 0) {
             alert('Please add segments to your workout first');
@@ -376,6 +492,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveWorkout').addEventListener('click', saveWorkout);
     document.getElementById('loadWorkout').addEventListener('click', loadWorkout);
     document.getElementById('deleteWorkout').addEventListener('click', deleteWorkout);
+    document.getElementById('importJson').addEventListener('click', importJsonWorkout);
+    document.getElementById('jsonFileInput').addEventListener('change', handleJsonFileImport);
     document.getElementById('startWorkout').addEventListener('click', startWorkout);
     document.getElementById('pauseWorkout').addEventListener('click', pauseWorkout);
     document.getElementById('stopWorkout').addEventListener('click', stopWorkout);

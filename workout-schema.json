@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Treadmill Workout Plan",
+  "description": "Schema for importing treadmill workout plans with heart rate and manual segments",
+  "type": "object",
+  "required": ["segments"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Optional name for the workout"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of the workout"
+    },
+    "segments": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Array of workout segments",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/heartRateSegment"
+          },
+          {
+            "$ref": "#/definitions/manualSegment"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "heartRateSegment": {
+      "type": "object",
+      "required": ["type", "duration", "targetHeartRate", "adjustments"],
+      "properties": {
+        "type": {
+          "const": "heartRate",
+          "description": "Segment type for heart rate-based training"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Duration of the segment in seconds"
+        },
+        "targetHeartRate": {
+          "type": "number",
+          "minimum": 50,
+          "maximum": 220,
+          "description": "Target heart rate in beats per minute"
+        },
+        "adjustments": {
+          "type": "object",
+          "required": ["speed", "incline"],
+          "properties": {
+            "speed": {
+              "type": "boolean",
+              "description": "Whether to adjust speed to reach target heart rate"
+            },
+            "incline": {
+              "type": "boolean",
+              "description": "Whether to adjust incline to reach target heart rate"
+            }
+          },
+          "additionalProperties": false
+        },
+        "speedLimits": {
+          "type": "object",
+          "description": "Optional speed limits for adjustments",
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Minimum speed in km/h"
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Maximum speed in km/h"
+            }
+          },
+          "additionalProperties": false
+        },
+        "inclineLimits": {
+          "type": "object",
+          "description": "Optional incline limits for adjustments",
+          "properties": {
+            "min": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Minimum incline percentage"
+            },
+            "max": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Maximum incline percentage"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "manualSegment": {
+      "type": "object",
+      "required": ["type", "duration", "speed"],
+      "properties": {
+        "type": {
+          "const": "manual",
+          "description": "Segment type for manual control with fixed values"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Duration of the segment in seconds"
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1,
+          "description": "Fixed speed in km/h"
+        },
+        "incline": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Fixed incline percentage (default: 0)"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
