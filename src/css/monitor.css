@@ -307,6 +307,7 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .workout-title h2 {
@@ -369,6 +370,7 @@ body {
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .current-speed {
@@ -404,6 +406,7 @@ body {
     padding: 25px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .segment-header {
@@ -486,6 +489,7 @@ body {
     gap: 15px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     border-left: 4px solid;
+    border: 1px solid #e9ecef;
 }
 
 .metric-card:hover {
@@ -1009,6 +1013,7 @@ body {
     padding: 20px;
     margin-bottom: 30px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .summary-header {
@@ -1064,6 +1069,7 @@ body {
     padding: 20px;
     margin-bottom: 30px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
 }
 
 .export-section h3 {
