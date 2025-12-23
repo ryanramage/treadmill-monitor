@@ -1,16 +1,16 @@
 const CACHE_NAME = 'hr-training-v1';
 const urlsToCache = [
   '/',
-  '/src/hr-training.html',
-  '/src/css/monitor.css',
-  '/src/css/overlay.css',
-  '/src/js/hr-training.js',
-  '/src/js/HeartRateTraining.js',
-  '/src/js/HrMonitor.js',
-  '/src/js/TreadmillControl.js',
-  '/src/js/TreadmillCommands.js',
-  '/src/js/Workout.js',
-  '/src/js/WorkoutParser.js',
+  '/index.html',
+  '/css/monitor.css',
+  '/css/overlay.css',
+  '/js/hr-training.js',
+  '/js/HeartRateTraining.js',
+  '/js/HrMonitor.js',
+  '/js/TreadmillControl.js',
+  '/js/TreadmillCommands.js',
+  '/js/Workout.js',
+  '/js/WorkoutParser.js',
   '/manifest.json'
 ];
 
