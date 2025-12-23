@@ -28,7 +28,7 @@ Create custom training sessions with different heart rate zones, durations, and 
 
 ## Get Started
 
-**Try it now:** [Launch the app](https://ichbinlaufen.de/laufband/hr-training.html)
+**Try it now:** [Launch the app](https://ra.mage.rocks/treadmill)
 
 1. Turn on your treadmill and heart rate monitor
 2. Open the app and tap "Connect"
