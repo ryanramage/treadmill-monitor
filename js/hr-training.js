@@ -24,6 +24,8 @@ let targetSpeed = 0;
 let targetIncline = 0;
 let lastProgramSpeed = 0;
 let speedDeviationThreshold = 0.3; // km/h tolerance
+let segmentStartGracePeriod = 10000; // 10 seconds grace period after segment start
+let lastSegmentStartTime = 0;
 
 // Workout data logging
 let workoutData = [];
@@ -104,6 +106,7 @@ function updateWorkoutDisplay() {
 
 async function startSegment(segment) {
     segmentStartTime = Date.now();
+    lastSegmentStartTime = Date.now(); // Track when segment started for grace period
     
     if (segment.type === 'heartRate') {
         // Set target heart rate display
@@ -1174,11 +1177,25 @@ treadmillControl.addStatusChangeHandler(statusChange => {
 function checkForManualAdjustments(treadmillData) {
     // Only check for manual adjustments in manual segments (not HR segments)
     if (programControlMode === 'auto' && targetSpeed > 0 && targetSpeed < 50) { // targetSpeed < 50 means it's a speed, not HR
+        
+        // Skip detection during grace period after segment start
+        const timeSinceSegmentStart = Date.now() - lastSegmentStartTime;
+        if (timeSinceSegmentStart < segmentStartGracePeriod) {
+            console.log(`Skipping manual adjustment detection during grace period (${Math.round(timeSinceSegmentStart/1000)}s/${segmentStartGracePeriod/1000}s)`);
+            return;
+        }
+        
         const speedDifference = Math.abs(treadmillData.speed - targetSpeed);
         
-        if (speedDifference > speedDeviationThreshold) {
+        // Use higher threshold for very low speeds to account for treadmill startup behavior
+        let adjustedThreshold = speedDeviationThreshold;
+        if (treadmillData.speed < 2.0 || targetSpeed < 2.0) {
+            adjustedThreshold = Math.max(speedDeviationThreshold, 1.0); // At least 1.0 km/h threshold for low speeds
+        }
+        
+        if (speedDifference > adjustedThreshold) {
             // User manually adjusted speed
-            console.log(`Manual speed adjustment detected: target ${targetSpeed}, actual ${treadmillData.speed}`);
+            console.log(`Manual speed adjustment detected: target ${targetSpeed}, actual ${treadmillData.speed}, threshold ${adjustedThreshold}`);
             programControlMode = 'manual';
             updateControlModeDisplay();
             showManualAdjustmentNotification(treadmillData.speed, targetSpeed);
