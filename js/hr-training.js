@@ -29,6 +29,27 @@ let speedDeviationThreshold = 0.3; // km/h tolerance
 let workoutData = [];
 let workoutSummary = null;
 
+// Wake lock for preventing sleep during workout
+let wakeLock = null;
+
+// Wake lock utilities
+async function preventSleep() {
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('Wake lock acquired - screen will stay on during workout');
+    } catch (err) {
+        console.warn('Wake lock failed:', err);
+    }
+}
+
+async function allowSleep() {
+    if (wakeLock) {
+        await wakeLock.release();
+        wakeLock = null;
+        console.log('Wake lock released - screen can sleep normally');
+    }
+}
+
 // Speed conversion utilities
 function kmhToMinPerKm(kmh) {
     if (kmh <= 0) return 0;
@@ -196,6 +217,9 @@ async function finishWorkout() {
             console.error('Failed to stop treadmill:', error);
         }
     }
+    
+    // Allow device to sleep again
+    await allowSleep();
     
     // Generate workout summary
     generateWorkoutSummary();
@@ -862,6 +886,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // Prevent device from sleeping during workout
+        await preventSleep();
+        
         // Hide all wizard screens, show running interface
         const screens = ['welcomeScreen', 'loadWorkoutScreen', 'importWorkoutScreen', 'workoutBuilderScreen', 'connectionScreen'];
         screens.forEach(screen => {
@@ -955,6 +982,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('newWorkout').addEventListener('click', function() {
         document.getElementById('postWorkoutScreen').style.display = 'none';
         initializeWizard();
+    });
+    
+    // Handle wake lock release when page visibility changes or app is backgrounded
+    document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'hidden' && wakeLock) {
+            // Page is hidden, but keep wake lock if workout is active
+            console.log('Page hidden, maintaining wake lock for active workout');
+        }
+    });
+    
+    // Handle wake lock release on page unload
+    window.addEventListener('beforeunload', async () => {
+        await allowSleep();
     });
     
     document.getElementById('exportGarmin').addEventListener('click', exportGarminActivity);
